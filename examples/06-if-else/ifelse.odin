@@ -2,6 +2,10 @@ package main
 
 import "core:fmt"
 
+ternary_example :: proc(x: int) -> string {
+	return x > 0 ? "positive" : "negative"
+}
+
 main :: proc() {
 	x := 10
 	if x < 20 {
@@ -17,4 +21,6 @@ main :: proc() {
 	} else {
 		fmt.println("y is not greater than 10")
 	}
+
+	fmt.println("x is: ", ternary_example(x))
 }
