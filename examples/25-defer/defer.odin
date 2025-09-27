@@ -15,6 +15,16 @@ answer :: proc() -> int {
 	return 42
 }
 
+defer_if :: proc(condition: bool) {
+	if condition {
+		defer {
+			fmt.println("defer_if: condition was true")
+		}
+	}
+
+	fmt.println("defer_if: proc")
+}
+
 main :: proc() {
 	defer foo()
 	defer bar()
@@ -22,12 +32,18 @@ main :: proc() {
 	result := answer()
 	fmt.printf("Main: the answer is %d\n", result)
 
+	defer_if(true)
+	defer_if(false)
+
 	fmt.println("Main: all done")
 }
 
 // Output:
 // answer: about to return 42
 // Main: the answer is 42
+// defer_if: condition was true
+// defer_if: proc
+// defer_if: proc
 // Main: all done
 // bar: this is bar
 // foo: this is foo
