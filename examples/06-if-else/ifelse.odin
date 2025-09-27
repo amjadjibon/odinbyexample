@@ -23,4 +23,7 @@ main :: proc() {
 	}
 
 	fmt.println("x is: ", ternary_example(x))
+
+	DEBUG_LOG_SIZE :: 1024 when ODIN_DEBUG else 0
+	fmt.println("DEBUG_LOG_SIZE is: ", DEBUG_LOG_SIZE)
 }
