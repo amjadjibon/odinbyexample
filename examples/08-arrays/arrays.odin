@@ -34,4 +34,14 @@ main :: proc() {
 
 	// Dynamic Arrays
 	dynamic_arrays()
+
+	// Sort
+	s := []int{1, 6, 3, 5, 7, 3, 0}
+	slice.sort(s)
+	fmt.println(s)
+
+	// Sort reverse
+	r := []int{1, 6, 3, 5, 7, 3, 0}
+	slice.reverse_sort(r)
+	fmt.println(r)
 }
