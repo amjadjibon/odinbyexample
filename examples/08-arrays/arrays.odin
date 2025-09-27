@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:slice"
 
 main :: proc() {
 	// 1D Array
@@ -30,4 +31,7 @@ main :: proc() {
 		}
 		fmt.println()
 	}
+
+	// Dynamic Arrays
+	dynamic_arrays()
 }
