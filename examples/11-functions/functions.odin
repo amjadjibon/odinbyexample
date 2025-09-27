@@ -22,6 +22,20 @@ swap :: proc(a: int, b: int) -> (int, int) {
 	return b, a
 }
 
+/*
+Shadowing Parameters
+To mutate the procedure parameter (like in C), an explicit copy is required.
+This can be done through shadowing the variable declaration:
+*/
+shadow :: proc(x: int) {
+	x := x // explicit mutation
+	for x > 0 {
+		fmt.println(x)
+		x -= 1
+	}
+}
+
+
 main :: proc() {
 	foo()
 
@@ -33,4 +47,6 @@ main :: proc() {
 
 	x, y := swap(10, 20)
 	fmt.println("Swapped:", x, y)
+
+	shadow(5)
 }
