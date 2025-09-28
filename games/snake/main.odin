@@ -20,6 +20,16 @@ main :: proc() {
 	move_direction = {0, 1}
 
 	for !rl.WindowShouldClose() {
+		if rl.IsKeyDown(.UP) {
+			move_direction = {0, -1}
+		} else if rl.IsKeyDown(.DOWN) {
+			move_direction = {0, 1}
+		} else if rl.IsKeyDown(.LEFT) {
+			move_direction = {-1, 0}
+		} else if rl.IsKeyDown(.RIGHT) {
+			move_direction = {1, 0}
+		}
+
 		tick_timer -= rl.GetFrameTime()
 
 		if tick_timer <= 0 {
