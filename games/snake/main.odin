@@ -9,12 +9,35 @@ CANVAS_SIZE :: GRID_WIDTH * CELL_SIZE
 TICK_RATE :: 0.13
 MAX_SNAKE_LENGTH :: GRID_WIDTH * GRID_WIDTH
 Vec2i :: [2]int
+food_pos: Vec2i
 
 snake_length: int
 tick_timer: f32 = TICK_RATE
 move_direction: Vec2i
 snake: [MAX_SNAKE_LENGTH]Vec2i
 game_over: bool
+
+place_food :: proc() {
+	occupied: [GRID_WIDTH][GRID_WIDTH]bool
+
+	for i in 0 ..< snake_length {
+		occupied[snake[i].x][snake[i].y] = true
+	}
+
+	free_cells := make([dynamic]Vec2i, context.temp_allocator)
+	for x in 0 ..< GRID_WIDTH {
+		for y in 0 ..< GRID_WIDTH {
+			if !occupied[x][y] {
+				append(&free_cells, Vec2i{x, y})
+			}
+		}
+	}
+
+	if len(free_cells) > 0 {
+		random_cell_index := rl.GetRandomValue(0, i32(len(free_cells)) - 1)
+		food_pos = free_cells[random_cell_index]
+	}
+}
 
 restart :: proc() {
 	snake_length = 3
@@ -24,18 +47,14 @@ restart :: proc() {
 	snake[1] = snake[0] - Vec2i{0, 1}
 	snake[2] = snake[0] - Vec2i{0, 2}
 	game_over = false
+	place_food()
 }
 
 main :: proc() {
 	rl.SetConfigFlags({.VSYNC_HINT})
 	rl.InitWindow(WINDOW_SIZE, WINDOW_SIZE, "Snake")
 
-	start_head_position := Vec2i{GRID_WIDTH / 2, GRID_WIDTH / 2}
-	snake[0] = start_head_position
-	snake[1] = start_head_position - Vec2i{0, 1}
-	snake[2] = start_head_position - Vec2i{0, 2}
-	snake_length = 3
-	move_direction = {0, 1}
+	restart()
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyDown(.UP) {
@@ -83,6 +102,14 @@ main :: proc() {
 		}
 		rl.BeginMode2D(camera)
 
+		food_rect := rl.Rectangle {
+			x      = f32(food_pos.x * CELL_SIZE),
+			y      = f32(food_pos.y * CELL_SIZE),
+			width  = CELL_SIZE,
+			height = CELL_SIZE,
+		}
+		rl.DrawRectangleRec(food_rect, rl.RED)
+
 		for i in 0 ..< snake_length {
 			head_rect := rl.Rectangle {
 				x      = f32(snake[i].x * CELL_SIZE),
@@ -102,6 +129,7 @@ main :: proc() {
 
 		rl.EndMode2D()
 		rl.EndDrawing()
+		free_all(context.temp_allocator)
 	}
 
 	rl.CloseWindow()
