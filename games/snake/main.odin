@@ -91,6 +91,13 @@ main :: proc() {
 			for i in 1 ..< snake_length {
 				snake[i], next_part_pos = next_part_pos, snake[i]
 			}
+
+
+			if head_pos == food_pos {
+				snake_length += 1
+				place_food()
+			}
+
 			tick_timer = TICK_RATE + tick_timer
 		}
 
