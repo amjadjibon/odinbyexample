@@ -4,6 +4,7 @@ import "core:encoding/json"
 import "core:fmt"
 
 User :: struct {
+	id:    int `json:"_id"`,
 	name:  string,
 	age:   int,
 	email: string,
@@ -11,7 +12,7 @@ User :: struct {
 
 main :: proc() {
 	// Unmarshalling JSON string to struct
-	json_str := `{"name": "Alice", "age": 30, "email": "admin@email.com"}`
+	json_str := `{"_id": 1, "name": "Alice", "age": 30, "email": "admin@email.com"}`
 
 	// Declare the user variable
 	user: User
