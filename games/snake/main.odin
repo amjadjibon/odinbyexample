@@ -76,15 +76,15 @@ restart_game :: proc(game: ^GameState) {
 
 // Handles keyboard input for movement and game restart
 handle_input :: proc(game: ^GameState) {
-	// Handle movement input (arrow keys)
-	if rl.IsKeyDown(.UP) {
-		game.move_direction = {0, -1} // Move up
-	} else if rl.IsKeyDown(.DOWN) {
-		game.move_direction = {0, 1} // Move down
-	} else if rl.IsKeyDown(.LEFT) {
-		game.move_direction = {-1, 0} // Move left
-	} else if rl.IsKeyDown(.RIGHT) {
-		game.move_direction = {1, 0} // Move right
+	// Handle movement input (arrow keys) - prevent reversing into self
+	if rl.IsKeyDown(.UP) && game.move_direction != {0, 1} {
+		game.move_direction = {0, -1} // Move up (if not moving down)
+	} else if rl.IsKeyDown(.DOWN) && game.move_direction != {0, -1} {
+		game.move_direction = {0, 1} // Move down (if not moving up)
+	} else if rl.IsKeyDown(.LEFT) && game.move_direction != {1, 0} {
+		game.move_direction = {-1, 0} // Move left (if not moving right)
+	} else if rl.IsKeyDown(.RIGHT) && game.move_direction != {-1, 0} {
+		game.move_direction = {1, 0} // Move right (if not moving left)
 	}
 
 	// Handle restart when game is over
