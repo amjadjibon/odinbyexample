@@ -18,6 +18,7 @@ tick_timer: f32 = TICK_RATE
 move_direction: Vec2i
 snake: [MAX_SNAKE_LENGTH]Vec2i
 game_over: bool
+highest_score: int
 
 place_food :: proc() {
 	occupied: [GRID_WIDTH][GRID_WIDTH]bool
@@ -178,7 +179,15 @@ main :: proc() {
 
 		score := snake_length - 3
 		score_text := fmt.ctprintf("Score: %d", score)
+
+		if score > highest_score {
+			highest_score = score
+		}
+
 		rl.DrawText(score_text, 4, CANVAS_SIZE - 14, 10, rl.GRAY)
+
+		highest_score_text := fmt.ctprintf("Highest Score: %d", highest_score)
+		rl.DrawText(highest_score_text, 4, CANVAS_SIZE - 28, 10, rl.GRAY)
 
 		rl.EndMode2D()
 		rl.EndDrawing()
