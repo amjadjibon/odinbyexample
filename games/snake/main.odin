@@ -1,9 +1,10 @@
 package main
 
+import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
-WINDOW_SIZE :: 1000
+WINDOW_SIZE :: 800
 GRID_WIDTH :: 20
 CELL_SIZE :: 16
 CANVAS_SIZE :: GRID_WIDTH * CELL_SIZE
@@ -176,15 +177,19 @@ main :: proc() {
 			rl.DrawText("Press Enter to Restart", 4, 30, 15, rl.BLACK)
 		}
 
-		rl.UnloadTexture(food_sprite)
-		rl.UnloadTexture(head_sprite)
-		rl.UnloadTexture(body_sprite)
-		rl.UnloadTexture(tail_sprite)
+		score := snake_length - 3
+		score_text := fmt.ctprintf("Score: %d", score)
+		rl.DrawText(score_text, 4, CANVAS_SIZE - 14, 10, rl.GRAY)
 
 		rl.EndMode2D()
 		rl.EndDrawing()
 		free_all(context.temp_allocator)
 	}
+
+	rl.UnloadTexture(food_sprite)
+	rl.UnloadTexture(head_sprite)
+	rl.UnloadTexture(body_sprite)
+	rl.UnloadTexture(tail_sprite)
 
 	rl.CloseWindow()
 }
