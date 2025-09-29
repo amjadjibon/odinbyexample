@@ -55,6 +55,7 @@ restart :: proc() {
 main :: proc() {
 	rl.SetConfigFlags({.VSYNC_HINT})
 	rl.InitWindow(WINDOW_SIZE, WINDOW_SIZE, "Snake")
+	rl.InitAudioDevice()
 
 	restart()
 
@@ -62,6 +63,9 @@ main :: proc() {
 	head_sprite := rl.LoadTexture("assets/head.png")
 	body_sprite := rl.LoadTexture("assets/body.png")
 	tail_sprite := rl.LoadTexture("assets/tail.png")
+
+	eat_sound := rl.LoadSound("assets/eat.wav")
+	crash_sound := rl.LoadSound("assets/crash.wav")
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyDown(.UP) {
@@ -93,12 +97,14 @@ main :: proc() {
 			   head_pos.y < 0 ||
 			   head_pos.y >= GRID_WIDTH {
 				game_over = true
+				rl.PlaySound(crash_sound)
 			}
 
 			for i in 1 ..< snake_length {
 				curr_pos := snake[i]
 				if curr_pos == head_pos {
 					game_over = true
+					rl.PlaySound(crash_sound)
 				}
 
 				snake[i] = next_part_pos
@@ -110,6 +116,7 @@ main :: proc() {
 				snake_length += 1
 				snake[snake_length - 1] = next_part_pos
 				place_food()
+				rl.PlaySound(eat_sound)
 			}
 
 			tick_timer = TICK_RATE + tick_timer
@@ -122,14 +129,6 @@ main :: proc() {
 			zoom = f32(WINDOW_SIZE) / CANVAS_SIZE,
 		}
 		rl.BeginMode2D(camera)
-
-		// food_rect := rl.Rectangle {
-		// 	x      = f32(food_pos.x * CELL_SIZE),
-		// 	y      = f32(food_pos.y * CELL_SIZE),
-		// 	width  = CELL_SIZE,
-		// 	height = CELL_SIZE,
-		// }
-		// rl.DrawRectangleRec(food_rect, rl.RED)
 
 		rl.DrawTextureV(
 			food_sprite,
@@ -190,6 +189,8 @@ main :: proc() {
 	rl.UnloadTexture(head_sprite)
 	rl.UnloadTexture(body_sprite)
 	rl.UnloadTexture(tail_sprite)
+
+	rl.CloseAudioDevice()
 
 	rl.CloseWindow()
 }
