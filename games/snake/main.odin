@@ -1,5 +1,6 @@
 package main
 
+import "core:math"
 import rl "vendor:raylib"
 
 WINDOW_SIZE :: 1000
@@ -55,6 +56,11 @@ main :: proc() {
 	rl.InitWindow(WINDOW_SIZE, WINDOW_SIZE, "Snake")
 
 	restart()
+
+	food_sprite := rl.LoadTexture("assets/food.png")
+	head_sprite := rl.LoadTexture("assets/head.png")
+	body_sprite := rl.LoadTexture("assets/body.png")
+	tail_sprite := rl.LoadTexture("assets/tail.png")
 
 	for !rl.WindowShouldClose() {
 		if rl.IsKeyDown(.UP) {
@@ -116,30 +122,64 @@ main :: proc() {
 		}
 		rl.BeginMode2D(camera)
 
-		food_rect := rl.Rectangle {
-			x      = f32(food_pos.x * CELL_SIZE),
-			y      = f32(food_pos.y * CELL_SIZE),
-			width  = CELL_SIZE,
-			height = CELL_SIZE,
-		}
-		rl.DrawRectangleRec(food_rect, rl.RED)
+		// food_rect := rl.Rectangle {
+		// 	x      = f32(food_pos.x * CELL_SIZE),
+		// 	y      = f32(food_pos.y * CELL_SIZE),
+		// 	width  = CELL_SIZE,
+		// 	height = CELL_SIZE,
+		// }
+		// rl.DrawRectangleRec(food_rect, rl.RED)
+
+		rl.DrawTextureV(
+			food_sprite,
+			{f32(food_pos.x * CELL_SIZE), f32(food_pos.y * CELL_SIZE)},
+			rl.RED,
+		)
 
 		for i in 0 ..< snake_length {
-			head_rect := rl.Rectangle {
-				x      = f32(snake[i].x * CELL_SIZE),
-				y      = f32(snake[i].y * CELL_SIZE),
-				width  = CELL_SIZE,
-				height = CELL_SIZE,
-			}
-			rl.DrawRectangleRec(head_rect, rl.WHITE)
-		}
+			pos := snake[i]
+			part_sprite := body_sprite
+			dir: Vec2i
 
+			if i == 0 {
+				part_sprite = head_sprite
+				dir = snake[i] - snake[i + 1]
+			} else if i == snake_length - 1 {
+				part_sprite = tail_sprite
+				dir = snake[i - 1] - snake[i]
+			} else {
+				dir = snake[i - 1] - snake[i]
+			}
+
+			rot := math.atan2(f32(dir.y), f32(dir.x)) * math.DEG_PER_RAD
+			source := rl.Rectangle{0, 0, f32(part_sprite.width), f32(part_sprite.height)}
+
+			dest := rl.Rectangle {
+				f32(pos.x) * CELL_SIZE + 0.5 * CELL_SIZE,
+				f32(pos.y) * CELL_SIZE + 0.5 * CELL_SIZE,
+				CELL_SIZE,
+				CELL_SIZE,
+			}
+
+			rl.DrawTexturePro(
+				part_sprite,
+				source,
+				dest,
+				{CELL_SIZE, CELL_SIZE} * 0.5,
+				rot,
+				rl.WHITE,
+			)
+		}
 
 		if game_over {
 			rl.DrawText("Game Over", 4, 4, 25, rl.RED)
 			rl.DrawText("Press Enter to Restart", 4, 30, 15, rl.BLACK)
 		}
 
+		rl.UnloadTexture(food_sprite)
+		rl.UnloadTexture(head_sprite)
+		rl.UnloadTexture(body_sprite)
+		rl.UnloadTexture(tail_sprite)
 
 		rl.EndMode2D()
 		rl.EndDrawing()
