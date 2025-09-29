@@ -11,6 +11,10 @@ CELL_SIZE :: 16 // Size of each grid cell in pixels
 CANVAS_SIZE :: GRID_WIDTH * CELL_SIZE // Total canvas size
 TICK_RATE :: 0.13 // Game update rate in seconds
 MAX_SNAKE_LENGTH :: GRID_WIDTH * GRID_WIDTH // Maximum possible snake length
+SHAKE_DURATION_CRASH :: 0.5 // Screen shake duration for crash (seconds)
+SHAKE_DURATION_EAT :: 0.1 // Screen shake duration for eating (seconds)
+SHAKE_INTENSITY_CRASH :: 8.0 // Screen shake intensity for crash
+SHAKE_INTENSITY_EAT :: 2.0 // Screen shake intensity for eating
 
 // 2D integer vector type for positions
 Vec2i :: [2]int
@@ -27,13 +31,21 @@ GameAssets :: struct {
 
 // Structure to hold all game state variables
 GameState :: struct {
-	food_pos:       Vec2i, // Current food position
-	snake_length:   int, // Current snake length
-	tick_timer:     f32, // Timer for game updates
-	move_direction: Vec2i, // Current movement direction
-	snake:          [MAX_SNAKE_LENGTH]Vec2i, // Snake body positions
-	game_over:      bool, // Game over state
-	highest_score:  int, // Highest score achieved
+	food_pos:        Vec2i, // Current food position
+	snake_length:    int, // Current snake length
+	tick_timer:      f32, // Timer for game updates
+	move_direction:  Vec2i, // Current movement direction
+	snake:           [MAX_SNAKE_LENGTH]Vec2i, // Snake body positions
+	game_over:       bool, // Game over state
+	highest_score:   int, // Highest score achieved
+	shake_timer:     f32, // Timer for screen shake effect
+	shake_intensity: f32, // Current shake intensity
+}
+
+// Triggers screen shake effect
+start_screen_shake :: proc(game: ^GameState, duration: f32, intensity: f32) {
+	game.shake_timer = duration
+	game.shake_intensity = intensity
 }
 
 // Places food at a random unoccupied position on the grid
@@ -95,12 +107,15 @@ handle_input :: proc(game: ^GameState) {
 
 // Updates game logic and handles collisions
 update_game :: proc(game: ^GameState, assets: ^GameAssets) {
-	// Don't update if game is over
+	// Update shake timer regardless of game state
+	game.shake_timer = max(0, game.shake_timer - rl.GetFrameTime())
+
+	// Don't update game logic if game is over
 	if game.game_over {
 		return
 	}
 
-	// Update timer
+	// Update game timer
 	game.tick_timer -= rl.GetFrameTime()
 
 	// Only update game state when tick timer expires
@@ -117,6 +132,7 @@ update_game :: proc(game: ^GameState, assets: ^GameAssets) {
 		   head_pos.y >= GRID_WIDTH {
 			game.game_over = true
 			rl.PlaySound(assets.crash_sound)
+			start_screen_shake(game, SHAKE_DURATION_CRASH, SHAKE_INTENSITY_CRASH)
 		}
 
 		// Move body segments and check self collision
@@ -126,6 +142,7 @@ update_game :: proc(game: ^GameState, assets: ^GameAssets) {
 			if curr_pos == head_pos {
 				game.game_over = true
 				rl.PlaySound(assets.crash_sound)
+				start_screen_shake(game, SHAKE_DURATION_CRASH, SHAKE_INTENSITY_CRASH)
 			}
 
 			// Move each segment to where the previous one was
@@ -139,6 +156,7 @@ update_game :: proc(game: ^GameState, assets: ^GameAssets) {
 			game.snake[game.snake_length - 1] = next_part_pos // Add new tail segment
 			place_food(game) // Place new food
 			rl.PlaySound(assets.eat_sound) // Play eat sound
+			start_screen_shake(game, SHAKE_DURATION_EAT, SHAKE_INTENSITY_EAT) // Screen shake
 		}
 
 		// Reset timer for next tick
@@ -151,9 +169,18 @@ render_game :: proc(game: ^GameState, assets: ^GameAssets) {
 	rl.BeginDrawing()
 	rl.ClearBackground({76, 53, 83, 255}) // Dark purple background
 
-	// Set up camera for pixel-perfect scaling
+	// Set up camera for pixel-perfect scaling with shake effect
+	shake_offset := rl.Vector2{0, 0}
+	if game.shake_timer > 0 {
+		// Generate random shake offset based on intensity
+		shake_x := (f32(rl.GetRandomValue(-100, 100)) / 100.0) * game.shake_intensity
+		shake_y := (f32(rl.GetRandomValue(-100, 100)) / 100.0) * game.shake_intensity
+		shake_offset = {shake_x, shake_y}
+	}
+
 	camera := rl.Camera2D {
-		zoom = f32(WINDOW_SIZE) / CANVAS_SIZE,
+		zoom   = f32(WINDOW_SIZE) / CANVAS_SIZE,
+		target = shake_offset,
 	}
 	rl.BeginMode2D(camera)
 
