@@ -1,7 +1,6 @@
 package main
 
 import "core:fmt"
-import "core:sys/darwin/CoreFoundation"
 
 Color :: enum {
 	Red,
