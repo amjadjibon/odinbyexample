@@ -1,7 +1,6 @@
 package linkedlist
 
 import "core:fmt"
-import "core:mem"
 
 // Node represents a node in a singly linked list
 Node :: struct($T: typeid) {
@@ -158,6 +157,12 @@ clear :: proc(list: ^SinglyLinkedList($T)) {
 	}
 	list.head = nil
 	list.size = 0
+}
+
+// Destroy the list and free all nodes
+destroy :: proc(list: ^SinglyLinkedList($T)) {
+	clear(list)
+	free(list)
 }
 
 // Print the list (for debugging)
