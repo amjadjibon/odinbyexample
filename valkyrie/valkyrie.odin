@@ -45,9 +45,10 @@ Flag_Value :: union {
 
 // Command context passed to command handlers
 Context :: struct {
-	args:   []string,
-	flags:  map[string]Flag_Value,
-	parent: ^Command,
+	args:      []string,
+	flags:     map[string]Flag_Value,
+	parent:    ^Command,
+	allocator: mem.Allocator,
 }
 
 // Command handler function type
@@ -62,6 +63,7 @@ Command :: struct {
 	subcommands: [dynamic]^Command,
 	handler:     Command_Fn,
 	parent:      ^Command,
+	allocator:   mem.Allocator,
 }
 
 // Application structure
@@ -70,16 +72,30 @@ App :: struct {
 	version:     string,
 	description: string,
 	root:        ^Command,
+	allocator:   mem.Allocator,
 }
 
 // Create a new CLI application
-app_create :: proc(name: string, version: string = "0.1.0", description: string = "") -> ^App {
-	app := new(App)
+app_create :: proc(
+	name: string,
+	version: string = "0.1.0",
+	description: string = "",
+	allocator := context.allocator,
+) -> ^App {
+	app := new(App, allocator)
 	app.name = name
 	app.version = version
 	app.description = description
-	app.root = command_create("", description)
+	app.allocator = allocator
+	app.root = command_create("", description, allocator = allocator)
 	return app
+}
+
+// Destroy application and free all resources
+app_destroy :: proc(app: ^App) {
+	if app == nil do return
+	command_destroy(app.root)
+	free(app, app.allocator)
 }
 
 // Create a new command
@@ -87,13 +103,30 @@ command_create :: proc(
 	name: string,
 	description: string = "",
 	handler: Command_Fn = nil,
+	allocator := context.allocator,
 ) -> ^Command {
-	cmd := new(Command)
+	cmd := new(Command, allocator)
 	cmd.name = name
 	cmd.description = description
-	cmd.flags = make([dynamic]Flag)
-	cmd.subcommands = make([dynamic]^Command)
+	cmd.handler = handler
+	cmd.allocator = allocator
+	cmd.flags = make([dynamic]Flag, allocator)
+	cmd.subcommands = make([dynamic]^Command, allocator)
 	return cmd
+}
+
+// Destroy command and free all resources recursively
+command_destroy :: proc(cmd: ^Command) {
+	if cmd == nil do return
+
+	// Destroy all subcommands first
+	for subcmd in cmd.subcommands {
+		command_destroy(subcmd)
+	}
+
+	delete(cmd.flags)
+	delete(cmd.subcommands)
+	free(cmd, cmd.allocator)
 }
 
 // Add a flag to a command
@@ -187,17 +220,26 @@ flag_float :: proc(
 parse_args :: proc(
 	cmd: ^Command,
 	args: []string,
+	allocator := context.allocator,
 ) -> (
 	ctx: Context,
 	cmd_to_run: ^Command,
 	ok: bool,
 ) {
-	ctx.flags = make(map[string]Flag_Value)
+	ctx.flags = make(map[string]Flag_Value, allocator = allocator)
+	ctx.allocator = allocator
 	ctx.parent = cmd
 	cmd_to_run = cmd
+	ok = false
+
+	// Ensure cleanup on error paths
+	defer if !ok {
+		delete(ctx.flags)
+		delete(ctx.args)
+	}
 
 	i := 0
-	positional_args := make([dynamic]string)
+	positional_args := make([dynamic]string, allocator)
 	defer delete(positional_args)
 
 	// First, set default values
@@ -382,7 +424,9 @@ parse_args :: proc(
 				if subcmd.name == arg {
 					subcommand_found = true
 					remaining_args := args[i + 1:]
-					return parse_args(subcmd, remaining_args)
+					delete(ctx.flags)
+					delete(ctx.args)
+					return parse_args(subcmd, remaining_args, allocator)
 				}
 			}
 
@@ -395,7 +439,7 @@ parse_args :: proc(
 	}
 
 	// Convert positional args to slice
-	ctx.args = slice.clone(positional_args[:])
+	ctx.args = slice.clone(positional_args[:], allocator)
 
 	// Check required flags
 	for flag in cmd.flags {
@@ -407,6 +451,7 @@ parse_args :: proc(
 		}
 	}
 
+	ok = true
 	return ctx, cmd_to_run, true
 }
 
@@ -460,7 +505,12 @@ app_run :: proc(app: ^App, args: []string = nil) -> int {
 		}
 	}
 
-	ctx, cmd, ok := parse_args(app.root, run_args)
+	ctx, cmd, ok := parse_args(app.root, run_args, app.allocator)
+	defer {
+		delete(ctx.args)
+		delete(ctx.flags)
+	}
+
 	if !ok {
 		return 1
 	}
@@ -475,11 +525,6 @@ app_run :: proc(app: ^App, args: []string = nil) -> int {
 	}
 
 	ok = cmd.handler(&ctx)
-
-	// Cleanup
-	delete(ctx.args)
-	delete(ctx.flags)
-
 	return ok ? 0 : 1
 }
 
